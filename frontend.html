@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartShop Connect</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Platypi&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Platypi&display=swap" rel="stylesheet" />
     <style>
         :root {
             --deep-blue: #1A3A6C;
@@ -32,7 +32,6 @@
             padding: 20px;
         }
 
-        /* Header Styles */
         header {
             text-align: center;
             padding: 50px 0;
@@ -47,7 +46,6 @@
             letter-spacing: 2px;
         }
 
-        /* Navigation */
         nav {
             display: flex;
             justify-content: center;
@@ -69,7 +67,6 @@
             transform: scale(1.05);
         }
 
-        /* Sections */
         section {
             margin: 40px 0;
             padding: 30px;
@@ -78,7 +75,6 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         }
 
-        /* Product Search */
         #product-search input {
             width: 100%;
             padding: 10px;
@@ -100,30 +96,29 @@
             border-radius: 5px;
         }
 
-        /* Store Locator */
-        #store-locator {
-            text-align: center;
-        }
-
-        #map-placeholder {
-            width: 100%;
-            height: 400px;
+        .search-results {
+            margin-top: 20px;
+            padding: 15px;
             background-color: var(--soft-neutral);
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            border-radius: 10px;
         }
 
-        /* Mobile Responsiveness */
-        @media (max-width: 768px) {
-            nav {
-                flex-direction: column;
-                align-items: center;
-            }
+        .dress-result {
+            border-bottom: 1px solid var(--deep-blue);
+            padding: 10px 0;
+        }
 
-            .logo {
-                font-size: 2rem;
-            }
+        .loading-indicator {
+            text-align: center;
+            color: var(--deep-blue);
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .error-message {
+            color: red;
+            text-align: center;
+            margin: 20px 0;
         }
     </style>
 </head>
@@ -145,7 +140,6 @@
         <div class="container">
             <h2>Product Search</h2>
             <input type="text" placeholder="Search products (name, category, color)">
-            
             <label class="upload-label" for="image-upload">
                 Upload Product Image
             </label>
@@ -156,11 +150,24 @@
     <section id="shopkeeper-upload">
         <div class="container">
             <h2>Shopkeeper Product Upload</h2>
-            <form>
-                <input type="text" placeholder="Product Name">
-                <input type="file" placeholder="Product Images">
-                <input type="text" placeholder="Size">
-                <input type="text" placeholder="Color">
+            <form action="/add-product" method="POST" enctype="multipart/form-data">
+                <input type="text" name="name" placeholder="Product Name" required>
+                <input type="text" name="description" placeholder="Product Description" required>
+                <input type="number" name="price" placeholder="Price" required>
+                <input type="number" name="stock" placeholder="Stock" required>
+                <input type="text" name="retailer_id" placeholder="Retailer ID" required>
+
+                <label class="upload-label" for="product-image-upload">
+                    Upload Product Image
+                </label>
+                <input type="file" name="image" id="product-image-upload" accept="image/*" required>
+
+                <label class="upload-excel-label" for="excel-upload">
+                    Upload Excel File
+                </label>
+                <input type="file" id="excel-upload" name="excel" accept=".xlsx" required>
+
+                <button type="submit" class="nav-button">Upload Product</button>
             </form>
         </div>
     </section>
@@ -173,5 +180,93 @@
             </div>
         </div>
     </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const imageUpload = document.getElementById('image-upload');
+            const productSearchContainer = document.querySelector('#product-search .container');
+
+            imageUpload.addEventListener('change', handleImageUpload);
+
+            function handleImageUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                clearPreviousResults();
+
+                const loadingIndicator = createLoadingIndicator();
+                productSearchContainer.appendChild(loadingIndicator);
+
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Upload failed');
+                    }
+                    return response.json();
+                })
+                .then(processImageResults)
+                .catch(handleUploadError)
+                .finally(() => {
+                    loadingIndicator.remove();
+                });
+            }
+
+            function clearPreviousResults() {
+                const existingResults = document.querySelector('.search-results');
+                if (existingResults) {
+                    existingResults.remove();
+                }
+            }
+
+            function createLoadingIndicator() {
+                const loadingDiv = document.createElement('div');
+                loadingDiv.textContent = 'Analyzing image...';
+                loadingDiv.classList.add('loading-indicator');
+                return loadingDiv;
+            }
+
+            function processImageResults(data) {
+                const resultsContainer = document.createElement('div');
+                resultsContainer.classList.add('search-results');
+
+                if (data.similar_dresses && data.similar_dresses.length > 0) {
+                    const titleElement = document.createElement('h3');
+                    titleElement.textContent = 'Similar Dresses Found';
+                    resultsContainer.appendChild(titleElement);
+
+                    data.similar_dresses.forEach(dress => {
+                        const dressElement = document.createElement('div');
+                        dressElement.classList.add('dress-result');
+                        dressElement.innerHTML = `
+                            <h4>${dress.name || 'Unnamed Dress'}</h4>
+                            <p>Store: ${dress.store || 'Unknown Store'}</p>
+                            <p>Price: $${dress.price ? dress.price.toFixed(2) : 'N/A'}</p>
+                        `;
+                        resultsContainer.appendChild(dressElement);
+                    });
+                } else {
+                    const noResultsElement = document.createElement('p');
+                    noResultsElement.textContent = 'No similar dresses found.';
+                    resultsContainer.appendChild(noResultsElement);
+                }
+
+                productSearchContainer.appendChild(resultsContainer);
+            }
+
+            function handleUploadError(error) {
+                console.error('Upload error:', error);
+                const errorContainer = document.createElement('div');
+                errorContainer.classList.add('error-message');
+                errorContainer.textContent = 'Failed to upload image. Please try again.';
+                productSearchContainer.appendChild(errorContainer);
+            }
+        });
+    </script>
 </body>
 </html>
