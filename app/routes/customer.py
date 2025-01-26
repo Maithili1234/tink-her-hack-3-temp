@@ -1,8 +1,9 @@
 from flask import Blueprint, render_template, request, redirect, url_for
-from app import db
-from app.models import Product
+
+from app.model.models import Product
 
 customer_bp = Blueprint('customer', __name__)
+
 
 # Route to display the home page with product listings
 @customer_bp.route('/')

@@ -1,41 +1,48 @@
-from flask import render_template, request, redirect, url_for, jsonify, Blueprint
+from flask import render_template, request, jsonify, Blueprint
+from app.model.models import Product
 from app import db
-from app.models import Retailer, Product
 import os
 
-# Folder to store uploaded images
+retailer_bp = Blueprint('retailer', __name__)
 UPLOAD_FOLDER = 'ap/static/uploads'  # Make sure this folder exists in your project
-#app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
-retailer_bp = Blueprint('retailer', __name__)
 
 @retailer_bp.route('/add-product', methods=['GET', 'POST'])
+
+
 def add_product():
-    if request.method == 'POST':
-        name = request.form['name']
-        description = request.form['description']
-        price = request.form['price']
-        stock = request.form['stock']
-        retailer_id = request.form['retailer_id']
+    if 'image' not in request.files:
+        return jsonify({"error": "No file part"}), 400
 
-        # Image upload handling
-        if 'image' not in request.files:
-            return jsonify({"error": "No image part"}), 400
-        file = request.files['image']
-        if file.filename == '':
-            return jsonify({"error": "No selected file"}), 400
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
 
-        # Save the image to the uploads folder
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-        file.save(file_path)
+    # Save the file
+    filename = secure_filename(file.filename)
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(file_path)
 
-        # Create a new product
-        new_product = Product(name=name, description=description, price=price, stock=stock, retailer_id=retailer_id, image_url=file_path)
-        db.session.add(new_product)
-        db.session.commit()
+    # Get other form data
+    name = request.form.get('name')
+    size = request.form.get('size')
+    color = request.form.get('color')
 
-        return redirect(url_for('main.retailer_dashboard'))
+    if not all([name, size, color]):
+        return jsonify({"error": "Missing fields"}), 400
+
+    # Simulate saving product info to a database
+    product = {
+        "name": name,
+        "size": size,
+        "color": color,
+        "image_url": file_path
+    }
+    # In a real app, you'd save this to your database
+    print(f"Product added: {product}")
+
+    return jsonify({"message": "Product uploaded successfully!", "product": product}), 200
 
     return render_template('add_product.html')

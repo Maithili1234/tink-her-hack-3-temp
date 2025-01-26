@@ -1,2 +1,21 @@
 <hii>
-    
+    try {
+        const response = await fetch("http://127.0.0.1:5000/retailer/add-product", {
+            method: "POST",
+            body: formData,
+        });
+        
+    if (!response.ok) {
+        const errorData = await response.json();
+        alert(errorData.error || "Failed to upload product.");
+        return;
+        const result = await response.json();
+        alert(result.message || "Product uploaded successfully!");
+    } catch (error) {
+        console.error("Error uploading product:", error);
+        alert("Failed to upload product.");
+    }
+});
+</script>
+</body>
+</html>
