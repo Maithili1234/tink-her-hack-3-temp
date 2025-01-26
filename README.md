@@ -108,7 +108,7 @@ For Hardware:
 *Add caption explaining the schematic*
 
 # Build Photos
-![Team](Add photo of your team here)
+![Team](https://drive.google.com/file/d/1jna7biieTUSatMzNFGtDr8nIZhMyhfbq/view?usp=drivesdk)
 
 
 ![Components](Add photo of your components here)
